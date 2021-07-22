@@ -1,12 +1,29 @@
 import unittest
 from unittest.mock import patch
 from unittest import mock
-
-from laplace.curvature import LayerMap
 import tensorflow as tf
+from laplace.curvature import LayerMap
 
 
 class LayerMapTest(unittest.TestCase):
+
+    @patch('tensorflow.keras.layers.Dense', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def setUp(self, model, layer) -> None:
+        layer.name = 'dense'
+
+        kernel_weights = mock.create_autospec(tf.Variable)
+        kernel_weights.name = 'dense/kernel:0'
+        kernel_weights.shape = [1, 1]
+
+        bias_weights = mock.create_autospec(tf.Variable)
+        bias_weights.name = 'dense/bias:0'
+        bias_weights.shape = [1]
+
+        layer.weights = [kernel_weights, bias_weights]
+
+        model.layers = [layer]
+        self.dense_model = model
 
     @patch('tensorflow.keras.layers.Dense', autospec=True)
     @patch('tensorflow.keras.models.Model', autospec=True)
@@ -44,86 +61,46 @@ class LayerMapTest(unittest.TestCase):
         is_layer_considered = layer_map.is_curvature_eligible('pooling')
         self.assertFalse(is_layer_considered)
 
-    @patch('tensorflow.keras.layers.Dense', autospec=True)
-    @patch('tensorflow.keras.models.Model', autospec=True)
-    def test_checks_for_bias(self, model, layer):
+    def test_checks_for_bias(self):
         # given
-        layer.name = 'dense'
-        kernel_weights = mock.create_autospec(tf.Variable)
-        bias_weights = mock.create_autospec(tf.Variable)
-        kernel_weights.name = 'dense/kernel:0'
-        bias_weights.name = 'dense/bias:0'
-        layer.weights = [kernel_weights, bias_weights]
-        model.layers = [layer]
+        model = self.dense_model
         # when
         layer_map = LayerMap(model)
         # then
         has_bias = layer_map.has_bias('dense')
         self.assertTrue(has_bias)
 
-    @patch('tensorflow.keras.layers.Dense', autospec=True)
-    @patch('tensorflow.keras.models.Model', autospec=True)
-    def test_it_exposes_bias_weights(self, model, layer):
+    def test_it_exposes_bias_weights(self):
         # given
-        layer.name = 'dense'
-        kernel_weights = mock.create_autospec(tf.Variable)
-        bias_weights = mock.create_autospec(tf.Variable)
-        kernel_weights.name = 'dense/kernel:0'
-        bias_weights.name = 'dense/bias:0'
-        layer.weights = [kernel_weights, bias_weights]
-        model.layers = [layer]
+        model = self.dense_model
         # when
         layer_map = LayerMap(model)
         # then
         weights = layer_map.get_bias_weights('dense')
         self.assertIn('bias', weights['name'])
 
-    @patch('tensorflow.keras.layers.Dense', autospec=True)
-    @patch('tensorflow.keras.models.Model', autospec=True)
-    def test_it_exposes_kernel_weights(self, model, layer):
+    def test_it_exposes_kernel_weights(self):
         # given
-        layer.name = 'dense'
-        kernel_weights = mock.create_autospec(tf.Variable)
-        bias_weights = mock.create_autospec(tf.Variable)
-        kernel_weights.name = 'dense/kernel:0'
-        bias_weights.name = 'dense/bias:0'
-        layer.weights = [kernel_weights, bias_weights]
-        model.layers = [layer]
-
+        model = self.dense_model
         # when
         layer_map = LayerMap(model)
-        weights = layer_map.get_kernel_weights('dense')
         # then
+        weights = layer_map.get_kernel_weights('dense')
         self.assertIn('kernel', weights['name'])
 
-    @patch('tensorflow.keras.layers.Dense', autospec=True)
-    @patch('tensorflow.keras.models.Model', autospec=True)
-    def test_it_exposes_layer_weights(self, model, layer):
+    def test_it_exposes_layer_weights(self):
         # given
-        layer.name = 'dense'
-        kernel_weights = mock.create_autospec(tf.Variable)
-        bias_weights = mock.create_autospec(tf.Variable)
-        kernel_weights.name = 'dense/kernel:0'
-        bias_weights.name = 'dense/bias:0'
-        layer.weights = [kernel_weights, bias_weights]
-        model.layers = [layer]
+        model = self.dense_model
         # when
         layer_map = LayerMap(model)
-        weights = layer_map.get_layer_weights('dense')
         # then
+        weights = layer_map.get_layer_weights('dense')
         self.assertIn('kernel', weights)
         self.assertIn('bias', weights)
 
-    @patch('tensorflow.keras.layers.Dense', autospec=True)
-    @patch('tensorflow.keras.models.Model', autospec=True)
-    def test_it_exposes_layer_shape(self, model, layer):
+    def test_it_exposes_layer_shape(self):
         # given
-        layer.name = 'dense'
-        kernel_weights = mock.create_autospec(tf.Variable)
-        kernel_weights.name = 'dense/kernel:0'
-        kernel_weights.shape = [1, 1]
-        layer.weights = [kernel_weights]
-        model.layers = [layer]
+        model = self.dense_model
         # when
         layer_map = LayerMap(model)
         # then
