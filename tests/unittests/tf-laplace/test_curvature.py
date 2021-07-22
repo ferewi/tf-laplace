@@ -1,99 +1,134 @@
 import unittest
 from unittest.mock import patch
+from unittest import mock
+
 from laplace.curvature import LayerMap
 import tensorflow as tf
 
 
 class LayerMapTest(unittest.TestCase):
 
-    def setUp(self) -> None:
-        self.dense_model = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(1, input_dim=1, activation='linear', name='dense')
-        ])
-
-        self.conv_model = tf.keras.models.Sequential([
-            tf.keras.layers.Conv2D(filters=1, kernel_size=(1, 1), padding="same", activation='linear',
-                                   input_shape=(1, 1, 1), name='conv'),
-        ])
-
-        self.pooling_model = tf.keras.models.Sequential([
-            tf.keras.layers.MaxPooling2D(pool_size=(1, 1), name='pooling'),
-        ])
-
-    def test_considers_dense_layers(self):
+    @patch('tensorflow.keras.layers.Dense', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def test_considers_dense_layers(self, model, layer):
         # given
-        model = self.dense_model
-        layer_map = LayerMap(model)
+        layer.name = 'dense'
+        model.layers = [layer]
         # when
+        layer_map = LayerMap(model)
+        # then
         is_layer_considered = layer_map.is_curvature_eligible('dense')
-        # then
         self.assertTrue(is_layer_considered)
 
-    def test_considers_conv_layers(self):
+    @patch('tensorflow.keras.layers.Conv2D', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def test_considers_conv_layers(self, model, layer):
         # given
-        model = self.conv_model
-        layer_map = LayerMap(model)
+        layer.name = 'conv'
+        model.layers = [layer]
         # when
+        layer_map = LayerMap(model)
+        # then
         is_layer_considered = layer_map.is_curvature_eligible('conv')
-        # then
         self.assertTrue(is_layer_considered)
 
-    def test_does_not_consider_pooling_layers(self):
+    @patch('tensorflow.keras.layers.MaxPooling2D', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def test_does_not_consider_pooling_layers(self, model, layer):
         # given
-        model = self.pooling_model
-        layer_map = LayerMap(model)
+        layer.name = 'pooling'
+        model.layers = [layer]
         # when
-        is_layer_considered = layer_map.is_curvature_eligible('pooling')
+        layer_map = LayerMap(model)
         # then
+        is_layer_considered = layer_map.is_curvature_eligible('pooling')
         self.assertFalse(is_layer_considered)
 
-    def test_checks_for_bias(self):
+    @patch('tensorflow.keras.layers.Dense', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def test_checks_for_bias(self, model, layer):
         # given
-        model = self.dense_model
-        layer_map = LayerMap(model)
+        layer.name = 'dense'
+        kernel_weights = mock.create_autospec(tf.Variable)
+        bias_weights = mock.create_autospec(tf.Variable)
+        kernel_weights.name = 'dense/kernel:0'
+        bias_weights.name = 'dense/bias:0'
+        layer.weights = [kernel_weights, bias_weights]
+        model.layers = [layer]
         # when
-        has_bias = layer_map.has_bias('dense')
+        layer_map = LayerMap(model)
         # then
+        has_bias = layer_map.has_bias('dense')
         self.assertTrue(has_bias)
 
-    def test_it_exposes_bias_weights(self):
+    @patch('tensorflow.keras.layers.Dense', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def test_it_exposes_bias_weights(self, model, layer):
         # given
-        model = self.dense_model
-        layer_map = LayerMap(model)
+        layer.name = 'dense'
+        kernel_weights = mock.create_autospec(tf.Variable)
+        bias_weights = mock.create_autospec(tf.Variable)
+        kernel_weights.name = 'dense/kernel:0'
+        bias_weights.name = 'dense/bias:0'
+        layer.weights = [kernel_weights, bias_weights]
+        model.layers = [layer]
         # when
-        weights = layer_map.get_bias_weights('dense')
+        layer_map = LayerMap(model)
         # then
+        weights = layer_map.get_bias_weights('dense')
         self.assertIn('bias', weights['name'])
 
-    def test_it_exposes_kernel_weights(self):
+    @patch('tensorflow.keras.layers.Dense', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def test_it_exposes_kernel_weights(self, model, layer):
         # given
-        model = self.dense_model
-        layer_map = LayerMap(model)
+        layer.name = 'dense'
+        kernel_weights = mock.create_autospec(tf.Variable)
+        bias_weights = mock.create_autospec(tf.Variable)
+        kernel_weights.name = 'dense/kernel:0'
+        bias_weights.name = 'dense/bias:0'
+        layer.weights = [kernel_weights, bias_weights]
+        model.layers = [layer]
+
         # when
+        layer_map = LayerMap(model)
         weights = layer_map.get_kernel_weights('dense')
         # then
         self.assertIn('kernel', weights['name'])
 
-    def test_it_exposes_layer_weights(self):
+    @patch('tensorflow.keras.layers.Dense', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def test_it_exposes_layer_weights(self, model, layer):
         # given
-        model = self.dense_model
-        layer_map = LayerMap(model)
+        layer.name = 'dense'
+        kernel_weights = mock.create_autospec(tf.Variable)
+        bias_weights = mock.create_autospec(tf.Variable)
+        kernel_weights.name = 'dense/kernel:0'
+        bias_weights.name = 'dense/bias:0'
+        layer.weights = [kernel_weights, bias_weights]
+        model.layers = [layer]
         # when
+        layer_map = LayerMap(model)
         weights = layer_map.get_layer_weights('dense')
         # then
         self.assertIn('kernel', weights)
         self.assertIn('bias', weights)
 
-    def test_it_exposes_layer_shape(self):
+    @patch('tensorflow.keras.layers.Dense', autospec=True)
+    @patch('tensorflow.keras.models.Model', autospec=True)
+    def test_it_exposes_layer_shape(self, model, layer):
         # given
-        model = self.dense_model
-        layer_map = LayerMap(model)
+        layer.name = 'dense'
+        kernel_weights = mock.create_autospec(tf.Variable)
+        kernel_weights.name = 'dense/kernel:0'
+        kernel_weights.shape = [1, 1]
+        layer.weights = [kernel_weights]
+        model.layers = [layer]
         # when
-        shape = layer_map.get_layer_shape('dense')
+        layer_map = LayerMap(model)
         # then
+        shape = layer_map.get_layer_shape('dense')
         self.assertEqual([2, 1], shape)
-
-
 
 
 if __name__ == '__main__':
