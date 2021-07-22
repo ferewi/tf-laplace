@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 from unittest import mock
 import tensorflow as tf
+import numpy as np
 import numpy.testing as npt
 from laplace.curvature import LayerMap, DiagFisher
 
@@ -138,29 +139,34 @@ class RealTfModel:
             grads = tape.gradient(loss_val, self.model.trainable_weights)
 
 
-class DiagFisherTest(unittest.TestCase):
+class ModelMocker:
 
-    def mock_dens_layer(self, name, shape):
+    @staticmethod
+    def mock_layer(name, shape):
         layer = mock.create_autospec(tf.keras.layers.Dense)
         layer.name = name
-
         kernel_weights = mock.create_autospec(tf.Variable)
         kernel_weights.name = 'dense/kernel:0'
         kernel_weights.shape = shape
-
         bias_weights = mock.create_autospec(tf.Variable)
         bias_weights.name = 'dense/bias:0'
         bias_weights.shape = [shape[1]]
-
         layer.weights = [kernel_weights, bias_weights]
-
         return layer
 
-    @patch('tensorflow.keras.models.Model', autospec=True)
-    def test_update(self, model):
+    @staticmethod
+    def mock_model():
+        model = mock.create_autospec(tf.keras.models.Sequential)
+        return model
+
+
+class DiagFisherTest(unittest.TestCase):
+
+    def test_update_first_iteration(self):
         # given
-        layer1 = self.mock_dens_layer('dense', (2, 3))
-        layer2 = self.mock_dens_layer('dense_1', (3, 2))
+        model = ModelMocker.mock_model()
+        layer1 = ModelMocker.mock_layer('dense', (2, 3))
+        layer2 = ModelMocker.mock_layer('dense_1', (3, 2))
         model.layers = [layer1, layer2]
         gradients = [
             [[2., 2., 2.], [2., 2., 2.]],
@@ -181,6 +187,37 @@ class DiagFisherTest(unittest.TestCase):
         self.assertEqual(len(diagfisher.state), 2)
         for lname, litem in diagfisher.state.items():
             npt.assert_allclose(litem.numpy(), stats[lname])
+
+    def test_update_second_iteration(self):
+        # given
+        model = ModelMocker.mock_model()
+        layer1 = ModelMocker.mock_layer('dense', (2, 3))
+        layer2 = ModelMocker.mock_layer('dense_1', (3, 2))
+        model.layers = [layer1, layer2]
+        gradients = [
+            [[2., 2., 2.], [2., 2., 2.]],
+            [2., 2., 2.],
+            [[3., 3.], [3., 3.], [3., 3.]],
+            [1., 1.]
+        ]
+        diagfisher = DiagFisher(model)
+        diagfisher.state = {
+            'dense': [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
+            'dense_1': [[1., 1.], [1., 1.], [1., 1.], [1., 1.]]
+        }
+
+        # when
+        diagfisher.update(gradients, 1)
+
+        # then
+        stats = {
+            'dense': [[5., 5., 5.], [5., 5., 5.], [5., 5., 5.]],
+            'dense_1': [[10., 10.], [10., 10.], [10., 10.], [2., 2.]]
+        }
+        self.assertEqual(len(diagfisher.state), 2)
+        for lname, litem in diagfisher.state.items():
+            npt.assert_allclose(litem.numpy(), stats[lname])
+
 
 
 if __name__ == '__main__':
