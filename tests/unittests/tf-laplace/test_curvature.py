@@ -137,6 +137,7 @@ class RealTfModel:
             logits = self.model(self.input)
             loss_val = self.loss(logits, self.y_true)
             grads = tape.gradient(loss_val, self.model.trainable_weights)
+            return grads
 
 
 class ModelMocker:
@@ -211,13 +212,45 @@ class DiagFisherTest(unittest.TestCase):
 
         # then
         stats = {
-            'dense': [[5., 5., 5.], [5., 5., 5.], [5., 5., 5.]],
-            'dense_1': [[10., 10.], [10., 10.], [10., 10.], [2., 2.]]
+            'dense': np.array([[5., 5., 5.], [5., 5., 5.], [5., 5., 5.]]),
+            'dense_1': np.array([[10., 10.], [10., 10.], [10., 10.], [2., 2.]])
         }
         self.assertEqual(len(diagfisher.state), 2)
         for lname, litem in diagfisher.state.items():
             npt.assert_allclose(litem.numpy(), stats[lname])
 
+    @patch('tensorflow.math.reciprocal')
+    def test_invert(self, reci_func):
+        def reciprocal(x):
+            return 1./x
+        reci_func.side_effect = reciprocal
+        # given
+        model = ModelMocker.mock_model()
+        layer1 = ModelMocker.mock_layer('dense', (2, 3))
+        layer2 = ModelMocker.mock_layer('dense_1', (3, 2))
+        model.layers = [layer1, layer2]
+        diagfisher = DiagFisher(model)
+        diagfisher.state = {
+            'dense': np.array([[4., 4., 4.], [4., 4., 4.], [4., 4., 4.]]),
+            'dense_1': np.array([[9., 9.], [9., 9.], [9., 9.], [1., 1.]])
+        }
+
+        # when
+        inverse = diagfisher.invert(norm=1., scale=1.)
+
+        # then
+        expected_inverse = {
+            'dense': np.array([[0.4472136, 0.4472136, 0.4472136],
+                               [0.4472136, 0.4472136, 0.4472136],
+                               [0.4472136, 0.4472136, 0.4472136]]),
+            'dense_1': np.array([[0.31622777, 0.31622777],
+                                 [0.31622777, 0.31622777],
+                                 [0.31622777, 0.31622777],
+                                 [0.70710678, 0.70710678]]),
+        }
+        self.assertEqual(len(inverse), 2)
+        for lname, litem in inverse.items():
+            npt.assert_allclose(litem.numpy(), expected_inverse[lname])
 
 
 if __name__ == '__main__':
