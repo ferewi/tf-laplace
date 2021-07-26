@@ -4,7 +4,7 @@ from unittest import mock
 import tensorflow as tf
 import numpy as np
 import numpy.testing as npt
-from laplace.curvature import LayerMap, DiagFisher
+from laplace.curvature import LayerMap, DiagFisher, BlockDiagFisher
 
 
 @unittest.skip('dev')
@@ -160,7 +160,7 @@ class ModelMocker:
         model = mock.create_autospec(tf.keras.models.Sequential)
         return model
 
-
+@unittest.skip('dev')
 class DiagFisherTest(unittest.TestCase):
 
     def test_update_first_iteration(self):
@@ -221,10 +221,9 @@ class DiagFisherTest(unittest.TestCase):
 
     @patch('tensorflow.math.reciprocal')
     def test_invert(self, reci_func):
-        def reciprocal(x):
-            return 1./x
-        reci_func.side_effect = reciprocal
         # given
+        reci_func.side_effect = lambda x: 1./x
+
         model = ModelMocker.mock_model()
         layer1 = ModelMocker.mock_layer('dense', (2, 3))
         layer2 = ModelMocker.mock_layer('dense_1', (3, 2))
@@ -248,6 +247,100 @@ class DiagFisherTest(unittest.TestCase):
                                  [0.31622777, 0.31622777],
                                  [0.70710678, 0.70710678]]),
         }
+        self.assertEqual(len(inverse), 2)
+        for lname, litem in inverse.items():
+            npt.assert_allclose(litem.numpy(), expected_inverse[lname])
+
+
+class BlockDiagFisherTest(unittest.TestCase):
+
+    def test_update_first_iteration(self):
+        model = ModelMocker.mock_model()
+        layer1 = ModelMocker.mock_layer('dense', (2, 3))
+        layer2 = ModelMocker.mock_layer('dense_1', (3, 2))
+        model.layers = [layer1, layer2]
+        gradients = [
+            [[2., 2., 2.], [2., 2., 2.]],
+            [2., 2., 2.],
+            [[3., 3.], [3., 3.], [3., 3.]],
+            [1., 1.]
+        ]
+        blockfisher = BlockDiagFisher(model)
+
+        # when
+        blockfisher.update(gradients, 1)
+
+        # then
+        stats = {
+            'dense': np.ones([9, 9])*4,
+            'dense_1': np.repeat([[9., 9., 9., 9., 9., 9., 3., 3.]], 8, axis=0)
+        }
+        stats['dense_1'][6] = stats['dense_1'][6]/3
+        stats['dense_1'][7] = stats['dense_1'][7]/3
+        self.assertEqual(len(blockfisher.state), 2)
+        for lname, litem in blockfisher.state.items():
+            npt.assert_allclose(litem.numpy(), stats[lname])
+
+    def test_update_second_iteration(self):
+        # given
+        model = ModelMocker.mock_model()
+        layer1 = ModelMocker.mock_layer('dense', (2, 3))
+        layer2 = ModelMocker.mock_layer('dense_1', (3, 2))
+        model.layers = [layer1, layer2]
+        gradients = [
+            [[2., 2., 2.], [2., 2., 2.]],
+            [2., 2., 2.],
+            [[3., 3.], [3., 3.], [3., 3.]],
+            [1., 1.]
+        ]
+        blockfisher = BlockDiagFisher(model)
+        blockfisher.state = {
+            'dense': np.ones([9, 9])*1,
+            'dense_1': np.repeat([[1., 1., 1., 1., 1., 1., 1., 1.]], 8, axis=0)
+        }
+
+        # when
+        blockfisher.update(gradients, 1)
+
+        # then
+        stats = {
+            'dense': np.ones([9, 9]) * 5,
+            'dense_1': np.repeat([[10., 10., 10., 10., 10., 10., 4., 4.]], 8, axis=0)
+        }
+        stats['dense_1'][6] = [4., 4., 4., 4., 4., 4., 2., 2.]
+        stats['dense_1'][7] = [4., 4., 4., 4., 4., 4., 2., 2.]
+        self.assertEqual(len(blockfisher.state), 2)
+        for lname, litem in blockfisher.state.items():
+            npt.assert_allclose(litem.numpy(), stats[lname])
+
+    @patch('tensorflow.math.reciprocal')
+    def test_invert(self, reci_func):
+        # given
+        reci_func.side_effect = lambda x: 1./x
+
+        model = ModelMocker.mock_model()
+        layer1 = ModelMocker.mock_layer('dense', (2, 3))
+        layer2 = ModelMocker.mock_layer('dense_1', (3, 2))
+        model.layers = [layer1, layer2]
+        blockfisher = DiagFisher(model)
+        blockfisher.state = {
+            'dense': np.ones([9, 9]) * 4,
+            'dense_1': np.repeat([[9., 9., 9., 9., 9., 9., 3., 3.]], 8, axis=0)
+        }
+        blockfisher.state['dense_1'][6] = blockfisher.state['dense_1'][6] / 3
+        blockfisher.state['dense_1'][7] = blockfisher.state['dense_1'][7] / 3
+
+        # when
+        inverse = blockfisher.invert(norm=1., scale=1.)
+
+        # then
+        expected_inverse = {
+            'dense': 0.4472136 * np.ones([9, 9]),
+            'dense_1': np.repeat([[0.31622777, 0.31622777, 0.31622777, 0.31622777, 0.31622777, 0.31622777, 0.5, 0.5]],
+                                 8, axis=0),
+        }
+        expected_inverse['dense_1'][6] = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.70710678, 0.70710678]
+        expected_inverse['dense_1'][7] = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.70710678, 0.70710678]
         self.assertEqual(len(inverse), 2)
         for lname, litem in inverse.items():
             npt.assert_allclose(litem.numpy(), expected_inverse[lname])
