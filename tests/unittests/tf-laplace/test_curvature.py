@@ -5,6 +5,7 @@ import tensorflow as tf
 import numpy as np
 import numpy.testing as npt
 from laplace.curvature import LayerMap, DiagFisher, BlockDiagFisher, KFAC
+from tests.testutils.tensorflow import ModelMocker
 
 
 class LayerMapTest(unittest.TestCase):
@@ -108,27 +109,6 @@ class LayerMapTest(unittest.TestCase):
         # then
         shape = layer_map.get_layer_shape('dense')
         self.assertEqual([2, 1], shape)
-
-
-class ModelMocker:
-
-    @staticmethod
-    def mock_layer(name, shape):
-        layer = mock.create_autospec(tf.keras.layers.Dense)
-        layer.name = name
-        kernel_weights = mock.create_autospec(tf.Variable)
-        kernel_weights.name = 'dense/kernel:0'
-        kernel_weights.shape = shape
-        bias_weights = mock.create_autospec(tf.Variable)
-        bias_weights.name = 'dense/bias:0'
-        bias_weights.shape = [shape[1]]
-        layer.weights = [kernel_weights, bias_weights]
-        return layer
-
-    @staticmethod
-    def mock_model():
-        model = mock.create_autospec(tf.keras.models.Sequential)
-        return model
 
 
 class DiagFisherTest(unittest.TestCase):
@@ -287,7 +267,8 @@ class BlockDiagFisherTest(unittest.TestCase):
         layer1 = ModelMocker.mock_layer('dense', (2, 3))
         layer2 = ModelMocker.mock_layer('dense_1', (3, 2))
         model.layers = [layer1, layer2]
-        blockfisher = DiagFisher(model)
+
+        blockfisher = BlockDiagFisher(model)
         blockfisher.state = {
             'dense': np.ones([9, 9]) * 4,
             'dense_1': np.repeat([[9., 9., 9., 9., 9., 9., 3., 3.]], 8, axis=0)
@@ -300,15 +281,31 @@ class BlockDiagFisherTest(unittest.TestCase):
 
         # then
         expected_inverse = {
-            'dense': 0.4472136 * np.ones([9, 9]),
-            'dense_1': np.repeat([[0.31622777, 0.31622777, 0.31622777, 0.31622777, 0.31622777, 0.31622777, 0.5, 0.5]],
-                                 8, axis=0),
+            'dense': [
+                [ 0.89189196, -0.10810812, -0.10810812, -0.10810812, -0.10810812, -0.10810813, -0.10810812, -0.10810813, -0.10810812],
+                [-0.10810812,  0.89189196, -0.10810812, -0.10810812, -0.10810812, -0.10810813, -0.10810812, -0.10810813, -0.10810812],
+                [-0.10810812, -0.10810812,  0.89189196, -0.10810811, -0.10810811, -0.10810811, -0.10810811, -0.10810811, -0.10810811],
+                [-0.10810812, -0.10810812, -0.10810811,  0.89189196, -0.10810811, -0.10810811, -0.10810811, -0.10810811, -0.10810811],
+                [-0.10810812, -0.10810812, -0.10810811, -0.10810811,  0.89189196, -0.10810811, -0.10810811, -0.10810811, -0.10810811],
+                [-0.10810813, -0.10810813, -0.10810811, -0.10810811, -0.10810811,  0.89189196, -0.10810811, -0.10810811, -0.10810811],
+                [-0.10810812, -0.10810812, -0.10810811, -0.10810811, -0.10810811, -0.10810811,  0.89189196, -0.10810811, -0.10810811],
+                [-0.10810813, -0.10810813, -0.10810811, -0.10810811, -0.10810811, -0.10810811, -0.10810811,  0.89189196, -0.10810811],
+                [-0.10810812, -0.10810812, -0.10810811, -0.10810811, -0.10810811, -0.10810811, -0.10810811, -0.10810811,  0.8918919 ]
+            ],
+            'dense_1': [
+                 [0.8421055,   -0.15789483, -0.15789482, -0.1578948 , -0.15789478, -0.15789479, -0.05263155, -0.05263155],
+                 [-0.15789483,  0.8421052 , -0.15789473, -0.1578947 , -0.15789469, -0.1578947 , -0.05263159, -0.05263159],
+                 [-0.15789482, -0.15789473,  0.84210527, -0.15789473, -0.15789473, -0.15789473, -0.0526316 , -0.0526316],
+                 [-0.15789479, -0.1578947 , -0.15789473,  0.84210527, -0.15789473, -0.15789475, -0.0526316 , -0.0526316],
+                 [-0.15789478, -0.15789469, -0.15789473, -0.15789473,  0.8421052 , -0.15789473, -0.0526316 , -0.0526316],
+                 [-0.15789479, -0.1578947 , -0.15789473, -0.15789475, -0.15789473,  0.84210527, -0.0526316 , -0.05263161],
+                 [-0.05263154, -0.05263159, -0.0526316 , -0.0526316 , -0.0526316 , -0.0526316 ,  0.98245627, -0.01754383],
+                 [-0.05263154, -0.05263159, -0.0526316 , -0.0526316 , -0.0526316 , -0.05263161, -0.01754383,  0.9824563]
+            ]
         }
-        expected_inverse['dense_1'][6] = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.70710678, 0.70710678]
-        expected_inverse['dense_1'][7] = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.70710678, 0.70710678]
         self.assertEqual(len(inverse), 2)
         for lname, litem in inverse.items():
-            npt.assert_allclose(litem.numpy(), expected_inverse[lname])
+            npt.assert_allclose(litem.numpy(), expected_inverse[lname], rtol=1e-7, atol=1e-8)
 
 
 class KFACTest(unittest.TestCase):
@@ -427,39 +424,11 @@ class KFACTest(unittest.TestCase):
                  [-0.7006222, 0.11043184]],
             ]
         }
+        self.assertEqual(len(inv), 2)
         for lname, factors in inv.items():
             Q, H = factors[0].numpy(), factors[1].numpy()
             npt.assert_allclose(Q, expected_inv[lname][0])
             npt.assert_allclose(H, expected_inv[lname][1])
-
-
-class RealTfModel:
-
-    def __init__(self, model):
-        self.model = model
-        self.input = tf.ones([1, 2]) * 1
-        self.y_true = [[9.]]
-        self.loss = tf.keras.losses.MeanSquaredError()
-
-    @classmethod
-    def create(cls):
-        ones_init = tf.keras.initializers.ones
-        model = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(3, input_dim=2, activation='linear', kernel_initializer=ones_init,
-                                  bias_initializer=ones_init),
-            tf.keras.layers.Dense(2, activation='linear', kernel_initializer=ones_init, bias_initializer=ones_init),
-        ])
-        return cls(model)
-
-    def get(self):
-        return self.model
-
-    def backward(self):
-        with tf.GradientTape() as tape:
-            logits = self.model(self.input)
-            loss_val = self.loss(logits, self.y_true)
-            grads = tape.gradient(loss_val, self.model.trainable_weights)
-            return grads
 
 
 if __name__ == '__main__':
