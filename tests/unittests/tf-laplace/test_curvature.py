@@ -7,7 +7,6 @@ import numpy.testing as npt
 from laplace.curvature import LayerMap, DiagFisher, BlockDiagFisher, KFAC
 
 
-@unittest.skip('dev')
 class LayerMapTest(unittest.TestCase):
 
     @patch('tensorflow.keras.layers.Dense', autospec=True)
@@ -111,35 +110,6 @@ class LayerMapTest(unittest.TestCase):
         self.assertEqual([2, 1], shape)
 
 
-class RealTfModel:
-
-    def __init__(self, model):
-        self.model = model
-        self.input = tf.ones([1, 2]) * 1
-        self.y_true = [[9.]]
-        self.loss = tf.keras.losses.MeanSquaredError()
-
-    @classmethod
-    def create(cls):
-        ones_init = tf.keras.initializers.ones
-        model = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(3, input_dim=2, activation='linear', kernel_initializer=ones_init,
-                                  bias_initializer=ones_init),
-            tf.keras.layers.Dense(2, activation='linear', kernel_initializer=ones_init, bias_initializer=ones_init),
-        ])
-        return cls(model)
-
-    def get(self):
-        return self.model
-
-    def backward(self):
-        with tf.GradientTape() as tape:
-            logits = self.model(self.input)
-            loss_val = self.loss(logits, self.y_true)
-            grads = tape.gradient(loss_val, self.model.trainable_weights)
-            return grads
-
-
 class ModelMocker:
 
     @staticmethod
@@ -161,7 +131,6 @@ class ModelMocker:
         return model
 
 
-@unittest.skip('dev')
 class DiagFisherTest(unittest.TestCase):
 
     def test_update_first_iteration(self):
@@ -249,7 +218,7 @@ class DiagFisherTest(unittest.TestCase):
         for lname, litem in inverse.items():
             npt.assert_allclose(litem.numpy(), expected_inverse[lname])
 
-@unittest.skip('dev')
+
 class BlockDiagFisherTest(unittest.TestCase):
 
     def test_update_first_iteration(self):
@@ -368,8 +337,8 @@ class KFACTest(unittest.TestCase):
                 np.ones([3, 3]) * 324
             ],
             'dense_1': [
-                [[9., 9., 9., 3.], [9., 9., 9., 3.], [9., 9., 9., 3.], [3., 3., 3., 1.]],
-                [[81., 81.], [81., 81.]]
+                np.array([[9., 9., 9., 3.], [9., 9., 9., 3.], [9., 9., 9., 3.], [3., 3., 3., 1.]]),
+                np.ones([2, 2]) * 81
             ]
         }
         self.assertEqual(len(kfac.state), 2)
@@ -407,8 +376,8 @@ class KFACTest(unittest.TestCase):
                 np.ones([3, 3]) * 325
             ],
             'dense_1': [
-                [[10., 10., 10., 4.], [10., 10., 10., 4.], [10., 10., 10., 4.], [4., 4., 4., 2.]],
-                [[82., 82.], [82., 82.]]
+                np.array([[10., 10., 10., 4.], [10., 10., 10., 4.], [10., 10., 10., 4.], [4., 4., 4., 2.]]),
+                np.array([[82., 82.], [82., 82.]])
             ]
         }
         self.assertEqual(len(kfac.state), 2)
@@ -463,6 +432,34 @@ class KFACTest(unittest.TestCase):
             npt.assert_allclose(Q, expected_inv[lname][0])
             npt.assert_allclose(H, expected_inv[lname][1])
 
+
+class RealTfModel:
+
+    def __init__(self, model):
+        self.model = model
+        self.input = tf.ones([1, 2]) * 1
+        self.y_true = [[9.]]
+        self.loss = tf.keras.losses.MeanSquaredError()
+
+    @classmethod
+    def create(cls):
+        ones_init = tf.keras.initializers.ones
+        model = tf.keras.models.Sequential([
+            tf.keras.layers.Dense(3, input_dim=2, activation='linear', kernel_initializer=ones_init,
+                                  bias_initializer=ones_init),
+            tf.keras.layers.Dense(2, activation='linear', kernel_initializer=ones_init, bias_initializer=ones_init),
+        ])
+        return cls(model)
+
+    def get(self):
+        return self.model
+
+    def backward(self):
+        with tf.GradientTape() as tape:
+            logits = self.model(self.input)
+            loss_val = self.loss(logits, self.y_true)
+            grads = tape.gradient(loss_val, self.model.trainable_weights)
+            return grads
 
 
 if __name__ == '__main__':
