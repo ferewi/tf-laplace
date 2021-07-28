@@ -1,5 +1,5 @@
 import random
-from typing import List
+import sys
 import numpy as np
 import tensorflow as tf
 
@@ -63,12 +63,7 @@ def eval_calibration(true_labels, baseline_predictions, bnn_predictions):
     ReliabilityDiagramPlotter.from_plot_spec(plotspec, with_histogram=True, with_ece=True,
                                              ylabel=r"$Precision_{macro}$")
 
-
-def main():
-    random.seed(666)
-    np.random.seed(666)
-    tf.random.set_seed(666)
-
+def calibration():
     # 1. create dataset
     ds = F3.create(50, -5.5, 5.5)
     training_set = tf.data.Dataset.from_tensor_slices(ds.get()).batch(32)
@@ -91,5 +86,27 @@ def main():
     eval_calibration(true_labels, baseline_predictions, bnn_predictions)
 
 
+def ood_detection():
+    pass
+
+
+def help():
+    print("Error! Please provide the experiment you want to run as an argument:\n"
+          "   python experiment/experiments.py calibration\n"
+          "   python experiment/experiments.py ood\n")
+
 if __name__ == '__main__':
-    main()
+    random.seed(666)
+    np.random.seed(666)
+    tf.random.set_seed(666)
+
+    if len(sys.argv) != 2:
+        help()
+        exit(1)
+    elif sys.argv[1] == 'calibration':
+        calibration()
+    elif sys.argv[1] == 'ood':
+        ood_detection()
+    else:
+        help()
+        exit(1)

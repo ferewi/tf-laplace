@@ -377,18 +377,18 @@ class ReliabilityDiagramPlotter:
             ax = [ax]
         else:
             figsize = (figsize[0], figsize[1] * 1.3)
-            fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=figsize, dpi=300,
+            fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=figsize, dpi=72,
                                    gridspec_kw={"height_ratios": [4, 1]}, constrained_layout=True)
         for i, graph in enumerate(spec.graphspecs):
             rd._single_chart(graph.data, with_histogram=with_histogram, ax=ax, legend=spec.legend_for(graph),
                              with_ece=with_ece, figsize=figsize, gidx=i, xlabel=xlabel, ylabel=ylabel)
 
-        fig.show()
+        plt.show()
 
     def _single_chart(self,
                       bin_data: Calibration,
                       figsize: Tuple[int, int] = (6, 6),
-                      dpi: int = 300,
+                      dpi: int = 72,
                       legend: str = "",
                       with_histogram=True,
                       with_ece: bool = True,
