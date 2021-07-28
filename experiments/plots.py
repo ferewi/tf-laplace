@@ -481,3 +481,17 @@ class ReliabilityDiagramPlotter:
         ax.set_xlabel(xlabel, fontsize='14')
         ax.set_ylabel(ylabel, fontsize='14')
 
+
+def roc_plot(roc_base, roc_bnn):
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.set_title('ROC of in- vs. out-of-distribution for F3 Dataset')
+    ax.plot(roc_base['fpr'], roc_base['tpr'], label=f"baseline, AUC = {roc_base['auroc']:.4f}")
+    # ax.plot(fpr_conf, tpr_conf, label=f"bnn conf, AUC = {auroc_conf:.4f}")
+    ax.plot(roc_bnn['fpr'], roc_bnn['tpr'], label=f"stddev, AUC = {roc_bnn['auroc']:.4f}")
+    ax.plot([0, 1], [0, 1], 'k--', alpha=0.5)
+    ax.set_xlim([0, 1])
+    ax.set_ylim([0, 1])
+    ax.set_xlabel("False Positive Rate")
+    ax.set_ylabel("True Positive Rate")
+    ax.legend()
+    plt.show()

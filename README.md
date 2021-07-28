@@ -6,20 +6,25 @@ Compatible with TensorFlow 2.x
 [![Build Status](https://travis-ci.com/ferewi/tf-laplace.svg?branch=main)](https://travis-ci.com/ferewi/tf-laplace)
 
 ## Description
-This library implements three Laplace approsimation methods to 
+This library implements three Laplace approximation methods to 
 approximate the true posterior distribution over the weights of 
 a neural network. It is similar to this 
 [implementation for PyTorch](https://github.com/DLR-RM/curvature) of [[2]](#ref2).
 
-The library implements three approximations to the Fisher 
-Information Matrix:
+The library, located in the `laplace` package, implements three 
+approximations to the Fisher Information Matrix:
 
 1. Diagonal (DiagFisher) [[3]](#ref3)
 2. Block-Diagonal (BlockDiagFisher)
 3. KFAC (KFAC) [[1]](#ref1) [[4]](#ref4) [[5]](#ref5)
 
-This library can be  used with any Tensorflow 2 sequential model. So far, 
-the approximation only considers Dense and Convolutional layers.
+Furthermore, it implements a sampler for each approximation to 
+sample weights from the approximated posterior distribution. The
+library can be used with any Tensorflow 2 sequential model. So far, 
+the approximations only considers Dense and Convolutional layers.
+
+The `experiments` package contains code related to the experiments 
+in `experiments.py`.  
 
 ## Install
 
@@ -29,20 +34,22 @@ pip install .
 ```
 This will install all the following dependencies that are needed:
 * numpy
-* tensorflow (2.5)
+* tensorflow (v2.5)
 * tensorflow_probability
 
-It will also install the following libraries that are just needed to run
-the demo in the provided jupyter notebook:
+It will also install the following libraries that are needed to run
+the demo in the provided jupyter notebook and the experiments in 
+`experiments.py`:
 * matplotlib
 * pandas
+* sklearn
 
-## Getting Started
+## Usage
 This mini-example as well as the demo provided in the jupyter notebook 
 demonstrate how to use this library to approximate the posterior 
 distribution of a neural network trained on a synthetic multi-label
-classification dataset. This dataset is also contained in this repository
-in the "experiments" package.
+classification dataset. This dataset is contained in the 
+`experiments/dataset.py` module.
 
 ```python
 # standard imports
@@ -94,6 +101,36 @@ for i, (x, y) in enumerate(test_set):
         batch_predictions[sample] = tf.sigmoid(model.predict(x)).numpy()
         model.set_weights(posterior_mean)
     predictions = np.concatenate([predictions, batch_predictions], axis=1)
+```
+
+## Experiments
+The experiments in `experiments.py` demonstrate how the model 
+uncertainty estimates obtained from the Bayesian neural network 
+can improve the calibration and out-of-distribution detection of
+the deterministic model. All code related to the experiment can
+be found in the `experiments` package.
+
+### Calibration
+The calibration experiment compares the calibration of the 
+deterministic baseline model to that of the Bayesian neural 
+network. This is visualised using calibration curve diagrams.
+
+The experiment can be run via:
+```shell
+python experiments.py calibration
+```
+
+### Out-of_Distribution Detection
+The out-of-distribution detection experiment demonstrates how 
+using the predictive standard deviation of multiple probabilistic
+forward passes improves the separability from in- and out-of-distribution
+data compared to using the confidence scores of the baseline model. 
+This is visualised using receiver operating characteristic (ROC) 
+plots.
+
+The experiment can be run via:
+```shell
+python experiments.py ood
 ```
 
 

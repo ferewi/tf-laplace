@@ -14,6 +14,7 @@ setup(name='tf-laplace',
             'tensorflow==2.5',
             'tensorflow_probability',
             'matplotlib',
-            'pandas'
+            'pandas',
+            'sklearn'
       ]
 )

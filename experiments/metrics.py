@@ -1,5 +1,6 @@
 from typing import List
 import numpy as np
+import sklearn.metrics
 
 
 class Calibration:
@@ -49,3 +50,41 @@ class Calibration:
         avg_bin_counts = np.sum(bin_counts, axis=1)
 
         return cls(avg_bin_precisions, avg_bin_confidences, avg_bin_counts, bins)
+
+
+class Auroc:
+
+    @staticmethod
+    def roc_curve(scores_id, scores_ood):
+        labels_id = np.zeros(scores_id.shape[0])
+        labels_ood = np.ones(scores_ood.shape[0])
+        y_true = np.concatenate([labels_id, labels_ood])
+        y_score = np.concatenate([scores_id, scores_ood])
+        fpr, tpr, threshold = sklearn.metrics.roc_curve(y_true, y_score)
+
+        return fpr, tpr, threshold
+
+    @staticmethod
+    def auroc(scores_id, scores_ood):
+        labels_id = np.zeros(scores_id.shape[0])
+        labels_ood = np.ones(scores_ood.shape[0])
+        y_true = np.concatenate([labels_id, labels_ood])
+        y_score = np.concatenate([scores_id, scores_ood])
+        auroc = sklearn.metrics.roc_auc_score(y_true, y_score)
+
+        return auroc
+
+    @staticmethod
+    def scores_for_positives(scores, confidences):
+        func = np.min
+        prediction = np.greater_equal(confidences, 0.5).astype(int)
+        scores_pos = scores * prediction
+
+        def func_nonzero(arr, func):
+            nz = arr[arr != 0]
+            return func(nz) if len(nz) > 0 else 0.0
+
+        samplewise_mean_nz = np.apply_along_axis(func_nonzero, axis=1, arr=scores_pos, func=func)
+        samplewise_mean_nz = samplewise_mean_nz[samplewise_mean_nz != 0]
+
+        return samplewise_mean_nz
