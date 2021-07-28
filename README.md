@@ -120,7 +120,7 @@ The experiment can be run via:
 python experiments.py calibration
 ```
 
-### Out-of_Distribution Detection
+### Out-of-Distribution Detection
 The out-of-distribution detection experiment demonstrates how 
 using the predictive standard deviation of multiple probabilistic
 forward passes improves the separability from in- and out-of-distribution
