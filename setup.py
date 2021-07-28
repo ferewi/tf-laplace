@@ -13,6 +13,8 @@ setup(name='tf-laplace',
             'numpy',
             'tensorflow',
             'tensorflow==2.5',
-            'tensorflow_probability'
+            'tensorflow_probability',
+            'matplotlib',
+            'pandas'
       ]
 )
