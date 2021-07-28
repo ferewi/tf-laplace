@@ -11,7 +11,6 @@ setup(name='tf-laplace',
       packages=find_packages(),
       install_requires=[
             'numpy',
-            'tensorflow',
             'tensorflow==2.5',
             'tensorflow_probability',
             'matplotlib',
