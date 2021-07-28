@@ -3,6 +3,8 @@ Estimate the true posterior distribution over the weights of a
 neural network using the Kronecker Factored Laplace Approximation. 
 Compatible with TensorFlow 2.x
 
+[![Build Status](https://travis-ci.com/ferewi/tf-laplace.svg?branch=main)](https://travis-ci.com/ferewi/tf-laplace)
+
 ## Description
 This library implements three Laplace approsimation methods to 
 approximate the true posterior distribution over the weights of 
