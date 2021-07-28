@@ -1,11 +1,10 @@
 import unittest
 from unittest.mock import patch
 import numpy as np
-import tensorflow as tf
 
 from laplace.curvature import DiagFisher, BlockDiagFisher, KFAC
 from laplace.sampler import Sampler, DiagFisherSampler, BlockDiagFisherSampler, KFACSampler
-from tests.testutils.tensorflow import ModelMocker, RealTfModel
+from tests.testutils.tensorflow import ModelMocker
 
 
 class SamplerTest(unittest.TestCase):
@@ -22,9 +21,9 @@ class SamplerTest(unittest.TestCase):
         kfac = KFAC(model)
 
         # when
-        diagsampler = Sampler.create(diagfisher, norm=1., scale=1.)
-        blocksampler = Sampler.create(blockfisher, norm=1., scale=1.)
-        kfacsampler = Sampler.create(kfac, norm=1., scale=1.)
+        diagsampler = Sampler.create(diagfisher, tau=1., n=1.)
+        blocksampler = Sampler.create(blockfisher, tau=1., n=1.)
+        kfacsampler = Sampler.create(kfac, tau=1., n=1.)
 
         # then
         self.assertIsInstance(diagsampler, DiagFisherSampler)
@@ -48,7 +47,7 @@ class DiagFisherSamplerTest(unittest.TestCase):
             'dense': np.array([[4., 4., 4.], [4., 4., 4.], [4., 4., 4.]], dtype=np.float32),
             'dense_1': np.array([[9., 9.], [9., 9.], [9., 9.], [1., 1.]], dtype=np.float32)
         }
-        sampler = DiagFisherSampler(diagfisher, norm=1., scale=1.)
+        sampler = DiagFisherSampler(diagfisher, tau=1., n=1.)
 
         # assert new weights have right shape
         def assert_weight_layer_1(x):
@@ -83,7 +82,7 @@ class BlockFisherSamplerTest(unittest.TestCase):
         }
         blockfisher.state['dense_1'][6] = blockfisher.state['dense_1'][6] / 3
         blockfisher.state['dense_1'][7] = blockfisher.state['dense_1'][7] / 3
-        sampler = BlockDiagFisherSampler(blockfisher, norm=1., scale=1.)
+        sampler = BlockDiagFisherSampler(blockfisher, tau=1., n=1.)
 
         # assert new weights have right shape
         def assert_weight_layer_1(x):
@@ -122,7 +121,7 @@ class KFACSamplerTest(unittest.TestCase):
                 np.array([[81., 81.], [81., 81.]])
             ]
         }
-        sampler = KFACSampler(kfac, norm=1., scale=1.)
+        sampler = KFACSampler(kfac, tau=1., n=1.)
 
         # assert new weights have right shape
         def assert_weight_layer_1(x):

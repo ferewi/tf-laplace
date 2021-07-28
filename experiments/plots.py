@@ -1,6 +1,6 @@
 import pathlib
 import re
-from typing import Tuple, List, TYPE_CHECKING
+from typing import Tuple, List
 
 import pandas as pd
 import numpy as np
@@ -261,7 +261,7 @@ class HyperparamsPlotter:
         xlabel = r"$\log_{10}(N)$" if is_log_scale else 'N'
         ylabel = r"$\log_{10}(\tau)$" if is_log_scale else r'$\tau$'
         title = f"{title} \n Measure: {measure}, best: {np.round(best_vals[measure][measure], decimals=4)}, " \
-                f"tau: {best_vals[measure]['norm']:.3e}, N={best_vals[measure]['scale']:.3e}, "
+                f"tau: {best_vals[measure]['tau']:.3e}, N={best_vals[measure]['n']:.3e}, "
         ax.set_title(title)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
@@ -304,7 +304,7 @@ class HyperparamsPlotter:
         xlabel = r"$\log_{10}(N)$" if is_log_scale else 'N'
         ylabel = r"$\log_{10}(\tau)$" if is_log_scale else r'$\tau$'
         title = f"{title} \n Measure: {measure}, best: {np.round(best_vals[measure][measure], decimals=4)}, " \
-                f"tau: {best_vals[measure]['norm']}, N={best_vals[measure]['scale']}, "
+                f"tau: {best_vals[measure]['tau']}, N={best_vals[measure]['n']}, "
         ax.set_title(title)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)

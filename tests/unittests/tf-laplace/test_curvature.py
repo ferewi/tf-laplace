@@ -182,7 +182,7 @@ class DiagFisherTest(unittest.TestCase):
         }
 
         # when
-        inverse = diagfisher.invert(norm=1., scale=1.)
+        inverse = diagfisher.invert(tau=1., n=1.)
 
         # then
         expected_inverse = {
@@ -277,7 +277,7 @@ class BlockDiagFisherTest(unittest.TestCase):
         blockfisher.state['dense_1'][7] = blockfisher.state['dense_1'][7] / 3
 
         # when
-        inverse = blockfisher.invert(norm=1., scale=1.)
+        inverse = blockfisher.invert(tau=1., n=1.)
 
         # then
         expected_inverse = {
@@ -403,7 +403,7 @@ class KFACTest(unittest.TestCase):
         }
 
         # when
-        inv = kfac.invert(norm=1., scale=1.)
+        inv = kfac.invert(tau=1., n=1.)
 
         # then
         expected_inv = {

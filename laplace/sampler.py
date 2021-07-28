@@ -5,20 +5,20 @@ from laplace.curvature import Curvature
 
 class Sampler(ABC):
 
-    def __init__(self, curvature: Curvature, norm: float, scale: float):
+    def __init__(self, curvature: Curvature, tau: float, n: float):
         self._curvature = curvature
-        self._curvature.invert(norm, scale)
-        self.norm = norm
-        self.scale = scale
+        self._curvature.invert(tau, n)
+        self.norm = tau
+        self.scale = n
 
     @staticmethod
-    def create(curvature: Curvature, norm: float, scale: float):
+    def create(curvature: Curvature, tau: float, n: float):
         sampler_by_curvature = {
             "DiagFisher": DiagFisherSampler,
             "BlockDiagFisher": BlockDiagFisherSampler,
             "KFAC": KFACSampler
         }
-        return sampler_by_curvature[curvature.__class__.__name__](curvature, norm, scale)
+        return sampler_by_curvature[curvature.__class__.__name__](curvature, tau, n)
 
     @abstractmethod
     def sample_and_replace_weights(self):

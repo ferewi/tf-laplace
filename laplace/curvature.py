@@ -1,5 +1,4 @@
 import json
-import time
 from abc import ABC, abstractmethod
 from operator import itemgetter
 from typing import Dict, List
@@ -43,7 +42,7 @@ class LayerMap:
                     'shape': layer.weights[0].shape
                 }
                 i += 1
-                if len(layer.weights) is 2:
+                if len(layer.weights) == 2:
                     self._map[layer.name]['weights']['bias'] = {
                         'id': i,
                         'name': layer.weights[1].name,
@@ -192,12 +191,12 @@ class Curvature(ABC):
         pass
 
     @abstractmethod
-    def invert(self, norm: float, scale: float) -> Dict[str, tf.Tensor]:
+    def invert(self, tau: float, n: float) -> Dict[str, tf.Tensor]:
         """ Abstract method for inverting the curvature matrix.
 
         Args:
-            norm: The hyperparameter :math:`\tau`, which is precision of the prior.
-            scale: The hyperparameter :math:`N`.
+            tau: The hyperparameter :math:`\tau`, which is precision of the prior.
+            n: The hyperparameter :math:`N`.
 
         Returns:
             Dict[str, tf.Tensor]
@@ -253,7 +252,7 @@ class Curvature(ABC):
             RuntimeError: if the inverse was not computed before.
         """
         if len(self._inverse) == 0:
-            raise RuntimeError("Inverse is not available. Call Curvature.invert(norm, scale) first.")
+            raise RuntimeError("Inverse is not available. Call Curvature.invert(tau, n) first.")
         if layer_id is not None:
             return self._inverse[layer_id]
         else:
@@ -317,22 +316,22 @@ class DiagFisher(Curvature):
                 else:
                     self.state[layer.name] = g
 
-    def invert(self, norm: float, scale: float) -> Dict[str, tf.Tensor]:
+    def invert(self, tau: float, n: float) -> Dict[str, tf.Tensor]:
         """Invert the diagonal fisher matrix.
 
         The inverse matrix is cached as a member. If `invert` is called a second time,
         the previous version will be replaced.
 
         Args:
-            norm: The hyperparameter :math:`\tau`. :math:`\tau I` is added to each diagonal element.
-            scale: The hyperparameter :math:`N`, which is used to scale each diagonal element.
+            tau: The hyperparameter :math:`\tau`. :math:`\tau I` is added to each diagonal element.
+            n: The hyperparameter :math:`N`, which is used to n each diagonal element.
 
         Returns:
             Dict[str, tf.Tensor]
         """
         self._inverse.clear()
         for layer_id in self.state:
-            inv = tf.math.reciprocal(scale * self.state[layer_id] + norm)
+            inv = tf.math.reciprocal(n * self.state[layer_id] + tau)
             self._inverse[layer_id] = tf.math.sqrt(inv)
         return self._inverse
 
@@ -379,16 +378,16 @@ class BlockDiagFisher(Curvature):
                 else:
                     self.state[layer.name] = g
 
-    def invert(self, norm: float, scale: float) -> Dict[str, tf.Tensor]:
+    def invert(self, tau: float, n: float) -> Dict[str, tf.Tensor]:
         """Invert the block-diagonal fisher matrix.
 
         The inverse matrix is cached as a member. If `invert` is called a second time,
         the previous version will be replaced.
 
         Args:
-            norm: The hyperparameter :math:`\tau`. :math:`\tau I` is added to the diagonal
+            tau: The hyperparameter :math:`\tau`. :math:`\tau I` is added to the diagonal
                 elements of each block.
-            scale: The hyperparameter :math:`N`, which is used to scale each block.
+            n: The hyperparameter :math:`N`, which is used to n each block.
 
         Returns:
             Dict[str, tf.Tensor]
@@ -396,8 +395,8 @@ class BlockDiagFisher(Curvature):
         """
         self._inverse.clear()
         for layer_id in self.state:
-            reg = tf.linalg.diag(tf.fill([self.state[layer_id].shape[0]], norm))
-            self._inverse[layer_id] = tf.linalg.inv(tf.add(scale * self.state[layer_id], reg))
+            reg = tf.linalg.diag(tf.fill([self.state[layer_id].shape[0]], tau))
+            self._inverse[layer_id] = tf.linalg.inv(tf.add(n * self.state[layer_id], reg))
         return self._inverse
 
 
@@ -578,7 +577,7 @@ class KFAC(Curvature):
                 # factor Q
                 # covariance of incoming activations (layerwise): Q_l = a_{l-1} a_{l-1}^T
 
-                if layer.__class__.__name__ is 'Conv2D':
+                if layer.__class__.__name__ == 'Conv2D':
                     a = self._layer_inputs[layer.name]
                     a = tf.image.extract_patches(images=a,
                                                  sizes=[1] + list(layer.kernel_size) + [1],
@@ -597,7 +596,7 @@ class KFAC(Curvature):
                 # pre-activation hessian
                 dh = gradients[layer.name] * gradients[layer.name].shape[0]
 
-                if layer.__class__.__name__ is 'Conv2D':
+                if layer.__class__.__name__ == 'Conv2D':
                     dh = tf.reshape(dh, [dh.shape[-1], -1])
                 else:
                     dh = tf.transpose(dh)
@@ -610,16 +609,16 @@ class KFAC(Curvature):
                 else:
                     self.state[layer.name] = [factor_Q, factor_H]
 
-    def invert(self, norm: float, scale: float) -> Dict[str, tf.Tensor]:
+    def invert(self, tau: float, n: float) -> Dict[str, tf.Tensor]:
         """Inverts the Kronecker factored approximation of the FIM
 
         The inverse matrix is cached as a member. If `invert` is called a second time,
         the previous version will be replaced.
 
         Args:
-            norm: The hyperparameter :math:`\tau`. :math:`\tau I` is added to the diagonal
+            tau: The hyperparameter :math:`\tau`. :math:`\tau I` is added to the diagonal
                 elements of each block.
-            scale: The hyperparameter :math:`N`, which is used to scale each block.
+            n: The hyperparameter :math:`N`, which is used to n each block.
 
         Returns:
             Dict[str, tf.Tensor]
@@ -629,11 +628,11 @@ class KFAC(Curvature):
         for layer_id in self.state:
             factor_Q, factor_H = self.state[layer_id]
 
-            diag_tau_Q = tf.linalg.diag(tf.fill([factor_Q.shape[0]], norm ** 0.5))
-            diag_tau_H = tf.linalg.diag(tf.fill([factor_H.shape[0]], norm ** 0.5))
+            diag_tau_Q = tf.linalg.diag(tf.fill([factor_Q.shape[0]], tau ** 0.5))
+            diag_tau_H = tf.linalg.diag(tf.fill([factor_H.shape[0]], tau ** 0.5))
 
-            reg_Q = scale ** 0.5 * factor_Q + diag_tau_Q
-            reg_H = scale ** 0.5 * factor_H + diag_tau_H
+            reg_Q = n ** 0.5 * factor_Q + diag_tau_Q
+            reg_H = n ** 0.5 * factor_H + diag_tau_H
 
             reg_Q = (reg_Q + tf.transpose(reg_Q)) / 2.0
             reg_H = (reg_H + tf.transpose(reg_H)) / 2.0
