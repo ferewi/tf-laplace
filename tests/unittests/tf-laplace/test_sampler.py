@@ -139,6 +139,5 @@ class KFACSamplerTest(unittest.TestCase):
         sampler.sample_and_replace_weights()
 
 
-
 if __name__ == '__main__':
     unittest.main()

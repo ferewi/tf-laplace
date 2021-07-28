@@ -1,8 +1,6 @@
 import unittest
-import numpy as np
-import numpy.testing as npt
 from laplace import hooks
-from tests.testutils.tensorflow import ModelMocker, RealTfModel
+from tests.testutils.tensorflow import ModelMocker
 
 
 class HooksTest(unittest.TestCase):
