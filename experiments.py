@@ -9,7 +9,7 @@ from laplace.sampler import Sampler
 
 from experiments.dataset import F3
 from experiments.metrics import Calibration, Auroc
-from experiments.plots import PlotSpec, ReliabilityGraphSpec, ReliabilityDiagramPlotter, roc_plot
+from experiments.plots import PlotSpec, ReliabilityGraphSpec, ReliabilityDiagramPlotter, RocPlotter
 
 
 def build_and_train_model(training_set, optimizer, loss):
@@ -80,7 +80,7 @@ def eval_ood(predictions_bl, predictions_bnn, predictions_bl_ood, predictions_bn
     auroc_bnn = sklearn.metrics.auc(fpr_bnn, tpr_bnn)
     roc_bnn = {'fpr': fpr_bnn, 'tpr': tpr_bnn, 'auroc': auroc_bnn}
 
-    roc_plot(roc_base, roc_bnn)
+    RocPlotter.plot(roc_base, roc_bnn)
 
 
 def calibration():
