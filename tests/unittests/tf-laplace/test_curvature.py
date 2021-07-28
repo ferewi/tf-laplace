@@ -305,7 +305,7 @@ class BlockDiagFisherTest(unittest.TestCase):
         }
         self.assertEqual(len(inverse), 2)
         for lname, litem in inverse.items():
-            npt.assert_allclose(litem.numpy(), expected_inverse[lname], rtol=1e-6, atol=1e-7)
+            npt.assert_allclose(litem.numpy(), expected_inverse[lname], rtol=1e-5, atol=1e-6)
 
 
 class KFACTest(unittest.TestCase):
@@ -427,8 +427,8 @@ class KFACTest(unittest.TestCase):
         self.assertEqual(len(inv), 2)
         for lname, factors in inv.items():
             Q, H = factors[0].numpy(), factors[1].numpy()
-            npt.assert_allclose(Q, expected_inv[lname][0], rtol=1e-6, atol=1e-7)
-            npt.assert_allclose(H, expected_inv[lname][1], rtol=1e-6, atol=1e-7)
+            npt.assert_allclose(Q, expected_inv[lname][0], rtol=1e-5, atol=1e-6)
+            npt.assert_allclose(H, expected_inv[lname][1], rtol=1e-5, atol=1e-6)
 
 
 if __name__ == '__main__':
