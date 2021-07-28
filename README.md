@@ -133,6 +133,9 @@ The experiment can be run via:
 python experiments.py ood
 ```
 
+## Contact 
+If you have any questions, comments, bug reports or feature requests please 
+use the GitHub issue tracker or write me at: ferdinand.rewicki@gmail.com
 
 ## Bibliography
 
@@ -143,3 +146,8 @@ python experiments.py ood
 |[3]<a name="ref3"></a>|Becker, S & Lecun, Y. (1988). Improving the convergence of back-propagation learning with second-order methods. In D. Touretzky, G. Hinton, & T. Sejnowski (Eds.), Proceedings of the 1988 Connectionist Models Summer School, San Mateo (pp. 29-37). Morgan Kaufmann.|
 |[4]<a name="ref4"></a>|Martens, J., & Grosse, R. (2015, June). Optimizing neural networks with kronecker-factored approximate curvature. In International conference on machine learning (pp. 2408-2417).|
 |[5]<a name="ref5"></a>|Botev, A., Ritter, H., & Barber, D. (2017, August). Practical gauss-newton optimisation for deep learning. In Proceedings of the 34th International Conference on Machine Learning-Volume 70 (pp. 557-565). JMLR. org.|
+
+## Copyright
+&copy; 2021 Ferdinand Rewicki (ferdinand.rewicki@gmail.com)
+
+The `tf-laplace` library is released under the [MIT license](https://github.com/ferewi/tf-laplace/blob/main/LICENSE)
