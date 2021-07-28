@@ -16,7 +16,7 @@ Information Matrix:
 
 1. Diagonal (DiagFisher) [[3]](#ref3)
 2. Block-Diagonal (BlockDiagFisher)
-3. KFAC (KFAC) [[1]](#ref1)
+3. KFAC (KFAC) [[1]](#ref1) [[4]](#ref4) [[5]](#ref5)
 
 This library can be  used with any Tensorflow 2 sequential model. So far, 
 the approximation only considers Dense and Convolutional layers.
@@ -104,3 +104,5 @@ for i, (x, y) in enumerate(test_set):
 |[1]<a name="ref1"></a>|Ritter, H., Botev, A., & Barber, D. (2018, January). A scalable laplace approximation for neural networks. In 6th International Conference on Learning Representations, ICLR 2018-Conference Track Proceedings (Vol. 6). International Conference on Representation Learning.|
 |[2]<a name="ref2"></a>|Lee, J., Humt, M., Feng, J., Triebel, R. (2020), Estimating Model Uncertainty of Neural Networks in Sparse Information Form. Proceedings of Machine Learning Research. International Conference on Machine Learning (ICML) |
 |[3]<a name="ref3"></a>|Becker, S & Lecun, Y. (1988). Improving the convergence of back-propagation learning with second-order methods. In D. Touretzky, G. Hinton, & T. Sejnowski (Eds.), Proceedings of the 1988 Connectionist Models Summer School, San Mateo (pp. 29-37). Morgan Kaufmann.|
+|[4]<a name="ref4"></a>|Martens, J., & Grosse, R. (2015, June). Optimizing neural networks with kronecker-factored approximate curvature. In International conference on machine learning (pp. 2408-2417).|
+|[5]<a name="ref5"></a>|Botev, A., Ritter, H., & Barber, D. (2017, August). Practical gauss-newton optimisation for deep learning. In Proceedings of the 34th International Conference on Machine Learning-Volume 70 (pp. 557-565). JMLR. org.|
