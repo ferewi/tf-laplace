@@ -18,9 +18,8 @@ Information Matrix:
 2. Block-Diagonal (BlockDiagFisher)
 3. KFAC (KFAC) [[1]](#ref1)
 
-This library was created as part of a master's thesis. It can be 
-used with any Tensorflow 2 sequential model. So far, the approximation only 
-considers Dense and Convolutional layers.
+This library can be  used with any Tensorflow 2 sequential model. So far, 
+the approximation only considers Dense and Convolutional layers.
 
 ## Install
 
