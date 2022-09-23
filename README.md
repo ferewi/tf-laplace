@@ -39,7 +39,7 @@ pip install git+https://github.com/ferewi/tf-laplace.git
 This will install all the following dependencies that are needed:
 * numpy
 * tensorflow (v2.5)
-* tensorflow_probability
+* tensorflow_probability (v0.13)
 
 It will also install the following libraries that are needed to run
 the demo in the provided jupyter notebook and the experiments in 
