@@ -12,7 +12,7 @@ setup(name='tf-laplace',
       install_requires=[
             'numpy',
             'tensorflow==2.5',
-            'tensorflow_probability',
+            'tensorflow_probability==0.13',
             'matplotlib',
             'pandas',
             'sklearn'
