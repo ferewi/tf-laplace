@@ -32,6 +32,10 @@ To install the library, clone or download the repository and run:
 ```
 pip install .
 ```
+or add it as a dependency to your environment using
+```
+pip install git+https://github.com/ferewi/tf-laplace.git
+```
 This will install all the following dependencies that are needed:
 * numpy
 * tensorflow (v2.5)
